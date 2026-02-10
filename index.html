@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Korea Food Finder</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  overflow-x: hidden;
+}
+
+#map {
+  width: 100%;
+  height: 45vh;
+  min-height: 250px;
+}
+
+.controls {
+  background: #fff;
+  padding: 10px 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+
+.filter-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.filter-btn.active {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #e74c3c;
+}
+
+.group-btn {
+  flex-shrink: 0;
+  padding: 7px 18px;
+  border: 2px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.group-btn.active {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+.sub-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sub-row::-webkit-scrollbar { display: none; }
+
+.radius-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+}
+.radius-row label {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+}
+.radius-row input[type=range] {
+  flex: 1;
+  accent-color: #e74c3c;
+}
+.radius-row .radius-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e74c3c;
+  min-width: 38px;
+  text-align: right;
+}
+
+#results {
+  padding: 10px 12px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+.card:active { box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
+
+.card-body {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+}
+
+.card-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #eee;
+}
+
+.card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-name {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #888;
+}
+
+.stars {
+  color: #f5a623;
+  letter-spacing: -1px;
+}
+
+.badge-open {
+  color: #27ae60;
+  font-weight: 600;
+}
+.badge-closed {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.card-distance {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 4px;
+}
+
+.price {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+/* Detail overlay */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.45);
+}
+.overlay.open { display: flex; }
+
+.detail-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  overflow-y: auto;
+  padding: 20px 16px 30px;
+  animation: slideUp 0.25s ease-out;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.detail-sheet .handle {
+  width: 36px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  margin: 0 auto 14px;
+}
+
+.detail-name {
+  font-size: 20px;
+  font-weight: 700;
+}
+.detail-addr {
+  font-size: 13px;
+  color: #888;
+  margin-top: 4px;
+}
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #666;
+}
+
+.detail-photos {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-top: 14px;
+  scrollbar-width: none;
+}
+.detail-photos::-webkit-scrollbar { display: none; }
+.detail-photos img {
+  height: 140px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.detail-actions a {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+.btn-directions {
+  background: #4285f4;
+  color: #fff;
+}
+.btn-call {
+  background: #27ae60;
+  color: #fff;
+}
+
+.detail-reviews {
+  margin-top: 18px;
+}
+.detail-reviews h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.review {
+  padding: 10px 0;
+  border-top: 1px solid #eee;
+}
+.review-author {
+  font-size: 13px;
+  font-weight: 600;
+}
+.review-text {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.loading-msg {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.error-msg {
+  text-align: center;
+  padding: 30px 20px;
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+/* Rating filter */
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+.rating-row label {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+}
+.rating-btn {
+  padding: 4px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.rating-btn.active {
+  background: #f5a623;
+  color: #fff;
+  border-color: #f5a623;
+}
+
+/* Style filter */
+.style-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.style-row::-webkit-scrollbar { display: none; }
+.style-row label {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.style-btn {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.style-btn.active {
+  background: #8e44ad;
+  color: #fff;
+  border-color: #8e44ad;
+}
+
+/* AI Pick styles */
+.card.ai-pick {
+  border-left: 4px solid #f5a623;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: linear-gradient(135deg, #f5a623, #e6950e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.ai-reason {
+  font-size: 11px;
+  color: #b07d10;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* Chat FAB + panel */
+.chat-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6c5ce7, #a855f7);
+  color: #fff;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(108,92,231,0.4);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+.chat-fab:active { transform: scale(0.92); }
+
+.chat-panel {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 200;
+  background: #f5f5f5;
+  flex-direction: column;
+}
+.chat-panel.open { display: flex; }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #6c5ce7, #a855f7);
+  color: #fff;
+}
+.chat-header h3 { font-size: 16px; font-weight: 600; }
+.chat-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+.chat-msg.user {
+  align-self: flex-end;
+  background: #6c5ce7;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: #fff;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.chat-msg.assistant p { margin-top: 6px; }
+.chat-msg.assistant p:first-child { margin-top: 0; }
+
+.chat-typing {
+  align-self: flex-start;
+  background: #fff;
+  padding: 10px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  color: #aaa;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border-top: 1px solid #eee;
+}
+.chat-input-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 20px;
+  font-size: 14px;
+  outline: none;
+}
+.chat-input-row input:focus { border-color: #6c5ce7; }
+.chat-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #6c5ce7;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-send:disabled { opacity: 0.4; }
+
+/* Search bar */
+.search-row {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+}
+.search-row input {
+  flex: 1;
+  padding: 8px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 20px;
+  font-size: 13px;
+  outline: none;
+}
+.search-row input:focus { border-color: #e74c3c; }
+.search-row button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="controls">
+  <div class="filter-row" id="groupFilters"></div>
+  <div class="sub-row" id="subFilters"></div>
+  <div class="radius-row">
+    <label>Search radius:</label>
+    <input type="range" id="radiusSlider" min="500" max="3000" step="250" value="1000">
+    <span class="radius-val" id="radiusVal">1 km</span>
+  </div>
+  <div class="rating-row">
+    <label>Min rating:</label>
+    <button class="rating-btn active" data-rating="0">Any</button>
+    <button class="rating-btn" data-rating="3.5">3.5+</button>
+    <button class="rating-btn" data-rating="4.0">4.0+</button>
+    <button class="rating-btn" data-rating="4.5">4.5+</button>
+  </div>
+  <div class="style-row">
+    <label>Style:</label>
+    <button class="style-btn active" data-style="">Any</button>
+    <button class="style-btn" data-style="가정식 로컬 맛집">Family Owned</button>
+    <button class="style-btn" data-style="프랜차이즈 체인 패스트푸드">Fast Food/Chain</button>
+    <button class="style-btn" data-style="파인다이닝 고급 레스토랑">Fine Dining</button>
+    <button class="style-btn" data-style="포장마차 노점 길거리음식">Street Food</button>
+  </div>
+  <div class="search-row">
+    <input type="text" id="searchInput" placeholder="Search anything... e.g. &quot;rooftop bar&quot;">
+    <button id="searchBtn">Search</button>
+  </div>
+</div>
+
+<div id="results">
+  <div class="loading-msg" id="statusMsg">Detecting your location...</div>
+</div>
+
+<!-- Detail overlay -->
+<div class="overlay" id="overlay">
+  <div class="detail-sheet" id="detailSheet">
+    <div class="handle"></div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- Chat FAB -->
+<button class="chat-fab" id="chatFab" title="Ask Gemini">💬</button>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <h3>Ask Gemini</h3>
+    <button class="chat-close" id="chatClose">&times;</button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg assistant">Hi! I can help you find the perfect spot. Try asking me things like "quiet date night restaurant" or "best late-night fried chicken nearby".</div>
+  </div>
+  <div class="chat-input-row">
+    <input type="text" id="chatInput" placeholder="What are you looking for?">
+    <button class="chat-send" id="chatSend">&#9654;</button>
+  </div>
+</div>
+
+<script>
+const API_KEY = 'AIzaSyBTKSXtUuRGiTEaBPITI8CrO4JRlAcuz7Q';
+const GEMINI_KEY = 'AIzaSyCJ6rGexYS43uuJAih6mYu-kn3Ukff5jtY';
+
+const CATEGORY_GROUPS = [
+  {
+    label: 'Restaurant', type: 'restaurant',
+    subs: [
+      { label: 'All',         keyword: '' },
+      { label: 'Bibimbap',    keyword: '비빔밥' },
+      { label: 'Breakfast',   keyword: '아침식사 brunch' },
+      { label: 'Chicken',     keyword: '치킨' },
+      { label: 'Chinese',     keyword: '중국집 짜장면' },
+      { label: 'Dumplings',   keyword: '만두' },
+      { label: 'Japanese',    keyword: '일식 초밥 라멘' },
+      { label: 'Kimbap',      keyword: '김밥' },
+      { label: 'Korean BBQ',  keyword: '삼겹살 고기구이' },
+      { label: 'Noodles',     keyword: '국수 면' },
+      { label: 'Porridge',    keyword: '죽' },
+      { label: 'Seafood',     keyword: '해산물 횟집' },
+      { label: 'Soup/Stew',   keyword: '찌개 국밥 탕' },
+      { label: 'Street Food', keyword: '분식 떡볶이' },
+      { label: 'Tteokbokki',  keyword: '떡볶이' },
+    ]
+  },
+  {
+    label: 'Cafe', type: 'cafe',
+    subs: [
+      { label: 'All',             keyword: '' },
+      { label: 'Bubble Tea',      keyword: '버블티 공차' },
+      { label: 'Coffee',          keyword: '커피 카페' },
+      { label: 'Matcha',          keyword: '말차 녹차 카페' },
+      { label: 'Traditional Tea', keyword: '전통차 찻집' },
+    ]
+  },
+  {
+    label: 'Bar', type: 'bar',
+    subs: [
+      { label: 'All',        keyword: '' },
+      { label: 'Casual',     keyword: '호프 포차' },
+      { label: 'Cocktails',  keyword: '칵테일 바' },
+      { label: 'Craft Beer', keyword: '수제맥주 크래프트비어' },
+      { label: 'Whiskey',    keyword: '위스키 바' },
+      { label: 'Wine',       keyword: '와인 바' },
+    ]
+  },
+];
+
+let map, userMarker, infoWindow, placesService;
+let userLat, userLng;
+let activeGroup = 0;
+let activeSub = 0;
+let searchRadius = 1000;
+let markers = [];
+let lastResults = [];
+let minRating = 0;
+let styleKeyword = '';
+
+// ---- Build group + subcategory buttons ----
+const groupFiltersEl = document.getElementById('groupFilters');
+const subFiltersEl = document.getElementById('subFilters');
+
+function buildSubButtons() {
+  subFiltersEl.innerHTML = '';
+  const group = CATEGORY_GROUPS[activeGroup];
+  group.subs.forEach((sub, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (i === activeSub ? ' active' : '');
+    btn.textContent = sub.label;
+    btn.addEventListener('click', () => {
+      subFiltersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeSub = i;
+      searchNearby();
+    });
+    subFiltersEl.appendChild(btn);
+  });
+}
+
+CATEGORY_GROUPS.forEach((group, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'group-btn' + (i === 0 ? ' active' : '');
+  btn.textContent = group.label;
+  btn.addEventListener('click', () => {
+    groupFiltersEl.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeGroup = i;
+    activeSub = 0;
+    buildSubButtons();
+    searchNearby();
+  });
+  groupFiltersEl.appendChild(btn);
+});
+
+buildSubButtons();
+
+// ---- Radius slider ----
+const radiusSlider = document.getElementById('radiusSlider');
+const radiusVal = document.getElementById('radiusVal');
+radiusSlider.addEventListener('input', () => {
+  searchRadius = parseInt(radiusSlider.value);
+  radiusVal.textContent = searchRadius >= 1000
+    ? (searchRadius / 1000).toFixed(searchRadius % 1000 === 0 ? 0 : 1) + ' km'
+    : searchRadius + 'm';
+});
+radiusSlider.addEventListener('change', () => {
+  searchRadius = parseInt(radiusSlider.value);
+  searchNearby();
+});
+
+// ---- Rating filter buttons ----
+document.querySelectorAll('.rating-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    minRating = parseFloat(btn.dataset.rating);
+    searchNearby();
+  });
+});
+
+// ---- Style filter buttons ----
+document.querySelectorAll('.style-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    styleKeyword = btn.dataset.style;
+    searchNearby();
+  });
+});
+
+// ---- Custom search bar ----
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+
+function doCustomSearch() {
+  const query = searchInput.value.trim();
+  if (!query || !userLat || !placesService) return;
+
+  clearMarkers();
+  document.getElementById('results').innerHTML = '<div class="loading-msg" id="statusMsg">Searching...</div>';
+
+  // Deactivate category buttons to show custom search is active
+  subFiltersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+
+  placesService.nearbySearch({
+    location: new google.maps.LatLng(userLat, userLng),
+    radius: searchRadius,
+    keyword: query,
+  }, (results, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+      document.getElementById('results').innerHTML = '';
+      setStatus('No results for "' + query + '". Try different words or a larger radius.', true);
+      return;
+    }
+
+    if (minRating > 0) {
+      results = results.filter(p => p.rating && p.rating >= minRating);
+    }
+    if (!results.length) {
+      document.getElementById('results').innerHTML = '';
+      setStatus('No places match the current rating filter.', true);
+      return;
+    }
+
+    results.forEach(place => {
+      const dist = getDistance(userLat, userLng, place.geometry.location.lat(), place.geometry.location.lng());
+      place._aiScore = computeAIScore(place, dist);
+      place._dist = dist;
+    });
+    results.sort((a, b) => b._aiScore - a._aiScore);
+    results.forEach((place, i) => { place._isAIPick = i < 3; });
+
+    lastResults = results;
+    renderResults(results);
+    addMarkers(results);
+  });
+}
+
+searchBtn.addEventListener('click', doCustomSearch);
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); doCustomSearch(); }
+});
+
+// ---- Overlay close ----
+document.getElementById('overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeDetail();
+});
+
+function closeDetail() {
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ---- Helpers ----
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function formatDistance(m) {
+  return m >= 1000 ? (m/1000).toFixed(1) + ' km' : Math.round(m) + 'm';
+}
+
+function starsHtml(rating) {
+  if (!rating) return '';
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.3;
+  let s = '';
+  for (let i = 0; i < full; i++) s += '★';
+  if (half) s += '½';
+  return `<span class="stars">${s}</span> ${rating.toFixed(1)}`;
+}
+
+function priceHtml(level) {
+  if (level == null) return '';
+  return '<span class="price">' + '₩'.repeat(level) + '</span>';
+}
+
+function clearMarkers() {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+}
+
+// ---- Status message ----
+function setStatus(msg, isError) {
+  const el = document.getElementById('statusMsg');
+  if (!el) {
+    const r = document.getElementById('results');
+    const d = document.createElement('div');
+    d.className = isError ? 'error-msg' : 'loading-msg';
+    d.id = 'statusMsg';
+    d.textContent = msg;
+    r.prepend(d);
+  } else {
+    el.className = isError ? 'error-msg' : 'loading-msg';
+    el.textContent = msg;
+    el.style.display = '';
+  }
+}
+
+// ---- AI Scoring ----
+function computeAIScore(place, distance) {
+  // Rating component (40%) — normalized 0-100 from 1-5 scale
+  const rating = place.rating || 0;
+  const ratingScore = Math.max(0, (rating - 1) / 4) * 100;
+
+  // Popularity component (25%) — log-scaled review count
+  const reviews = place.user_ratings_total || 0;
+  const popularityScore = Math.min(100, Math.log10(reviews + 1) / Math.log10(2000) * 100);
+
+  // Proximity component (20%) — closer is better, within searchRadius
+  const proximityScore = Math.max(0, (1 - distance / searchRadius)) * 100;
+
+  // Availability component (15%) — bonus if currently open
+  const isOpen = place.opening_hours ? place.opening_hours.isOpen() : null;
+  const availabilityScore = isOpen === true ? 100 : (isOpen === false ? 0 : 50);
+
+  return ratingScore * 0.4 + popularityScore * 0.25 + proximityScore * 0.2 + availabilityScore * 0.15;
+}
+
+function generateReason(place, distance, isOpen) {
+  const parts = [];
+  if (place.rating >= 4.5) parts.push('Exceptional rating');
+  else if (place.rating >= 4.0) parts.push('Highly rated');
+  else if (place.rating >= 3.5) parts.push('Well rated');
+
+  const reviews = place.user_ratings_total || 0;
+  if (reviews >= 1000) parts.push(`with ${Math.round(reviews / 100) * 100}+ reviews`);
+  else if (reviews >= 100) parts.push(`with ${Math.round(reviews / 10) * 10}+ reviews`);
+
+  const distM = Math.round(distance);
+  if (distM <= 200) parts.push('just steps away');
+  else if (distM <= 500) parts.push(`only ${distM}m away`);
+
+  if (isOpen === true) parts.push('open now');
+
+  return parts.length > 0 ? parts.join(', ') : 'Top pick nearby';
+}
+
+// ---- Search ----
+function searchNearby() {
+  if (!userLat || !placesService) return;
+
+  clearMarkers();
+  document.getElementById('results').innerHTML = '<div class="loading-msg" id="statusMsg">Searching nearby restaurants...</div>';
+
+  const group = CATEGORY_GROUPS[activeGroup];
+  const sub = group.subs[activeSub];
+  const request = {
+    location: new google.maps.LatLng(userLat, userLng),
+    radius: searchRadius,
+    type: group.type,
+  };
+  const keywords = [sub.keyword, styleKeyword].filter(Boolean).join(' ');
+  if (keywords) {
+    request.keyword = keywords;
+  }
+
+  placesService.nearbySearch(request, (results, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+      document.getElementById('results').innerHTML = '';
+      setStatus(status === 'ZERO_RESULTS' ? 'No places found. Try a larger radius or different category.' : 'Search failed: ' + status, true);
+      return;
+    }
+
+    // Apply minimum rating filter
+    if (minRating > 0) {
+      results = results.filter(p => p.rating && p.rating >= minRating);
+    }
+
+    if (!results.length) {
+      document.getElementById('results').innerHTML = '';
+      setStatus('No places match the current rating filter. Try lowering the minimum rating.', true);
+      return;
+    }
+
+    // Compute AI scores and attach to each result
+    results.forEach(place => {
+      const dist = getDistance(userLat, userLng, place.geometry.location.lat(), place.geometry.location.lng());
+      place._aiScore = computeAIScore(place, dist);
+      place._dist = dist;
+    });
+
+    // Sort by AI score descending
+    results.sort((a, b) => b._aiScore - a._aiScore);
+
+    // Tag top 3 as AI Picks
+    results.forEach((place, i) => {
+      place._isAIPick = i < 3;
+    });
+
+    lastResults = results;
+    renderResults(results);
+    addMarkers(results);
+  });
+}
+
+function renderResults(places) {
+  const container = document.getElementById('results');
+  container.innerHTML = '';
+
+  places.forEach((place, idx) => {
+    const dist = place._dist != null ? place._dist : getDistance(userLat, userLng, place.geometry.location.lat(), place.geometry.location.lng());
+    const photoUrl = place.photos && place.photos.length
+      ? place.photos[0].getUrl({ maxWidth: 200, maxHeight: 200 })
+      : '';
+
+    const isOpen = place.opening_hours ? place.opening_hours.isOpen() : null;
+    let openBadge = '';
+    if (isOpen === true) openBadge = '<span class="badge-open">Open</span>';
+    else if (isOpen === false) openBadge = '<span class="badge-closed">Closed</span>';
+
+    let aiBadgeHtml = '';
+    if (place._isAIPick) {
+      const reason = generateReason(place, dist, isOpen);
+      aiBadgeHtml = `<div class="ai-badge">✦ AI Pick</div><div class="ai-reason">${reason}</div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'card' + (place._isAIPick ? ' ai-pick' : '');
+    card.innerHTML = `
+      <div class="card-body">
+        ${photoUrl ? `<img class="card-photo" src="${photoUrl}" alt="" loading="lazy">` : '<div class="card-photo"></div>'}
+        <div class="card-info">
+          ${aiBadgeHtml}
+          <div class="card-name">${place.name}</div>
+          <div class="card-meta">
+            ${starsHtml(place.rating)}
+            ${place.user_ratings_total ? '<span>(' + place.user_ratings_total + ')</span>' : ''}
+            ${priceHtml(place.price_level)}
+            ${openBadge}
+          </div>
+          <div class="card-distance">${formatDistance(dist)}</div>
+        </div>
+      </div>`;
+    card.addEventListener('click', () => showDetail(place));
+    container.appendChild(card);
+  });
+}
+
+function addMarkers(places) {
+  places.forEach((place, idx) => {
+    const iconUrl = place._isAIPick
+      ? 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
+      : 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+    const marker = new google.maps.Marker({
+      position: place.geometry.location,
+      map: map,
+      title: place.name,
+      icon: { url: iconUrl },
+    });
+    marker.addListener('click', () => showDetail(place));
+    markers.push(marker);
+  });
+}
+
+// ---- Detail view ----
+function showDetail(place) {
+  const overlay = document.getElementById('overlay');
+  const content = document.getElementById('detailContent');
+  content.innerHTML = '<div class="loading-msg">Loading details...</div>';
+  overlay.classList.add('open');
+
+  placesService.getDetails({
+    placeId: place.place_id,
+    fields: ['name','formatted_address','formatted_phone_number','rating','user_ratings_total',
+             'price_level','opening_hours','photos','reviews','url','website','geometry']
+  }, (det, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !det) {
+      content.innerHTML = '<div class="error-msg">Could not load details.</div>';
+      return;
+    }
+
+    const dist = getDistance(userLat, userLng, det.geometry.location.lat(), det.geometry.location.lng());
+    const isOpen = det.opening_hours ? det.opening_hours.isOpen() : null;
+    let openBadge = '';
+    if (isOpen === true) openBadge = '<span class="badge-open">Open now</span>';
+    else if (isOpen === false) openBadge = '<span class="badge-closed">Closed</span>';
+
+    // Hours
+    let hoursHtml = '';
+    if (det.opening_hours && det.opening_hours.weekday_text) {
+      hoursHtml = '<div style="margin-top:12px;font-size:12px;color:#888;line-height:1.8">' +
+        det.opening_hours.weekday_text.join('<br>') + '</div>';
+    }
+
+    // Photos
+    let photosHtml = '';
+    if (det.photos && det.photos.length) {
+      photosHtml = '<div class="detail-photos">' +
+        det.photos.slice(0, 8).map(p => `<img src="${p.getUrl({maxWidth:400})}" alt="" loading="lazy">`).join('') +
+        '</div>';
+    }
+
+    // Directions link
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${det.geometry.location.lat()},${det.geometry.location.lng()}&destination_place_id=${place.place_id}`;
+
+    // Actions
+    let actionsHtml = `<div class="detail-actions">
+      <a class="btn-directions" href="${mapsUrl}" target="_blank">Directions</a>`;
+    if (det.formatted_phone_number) {
+      actionsHtml += `<a class="btn-call" href="tel:${det.formatted_phone_number}">Call</a>`;
+    }
+    actionsHtml += '</div>';
+
+    // Reviews
+    let reviewsHtml = '';
+    if (det.reviews && det.reviews.length) {
+      reviewsHtml = '<div class="detail-reviews"><h3>Reviews</h3>' +
+        det.reviews.slice(0, 5).map(r => `
+          <div class="review">
+            <div class="review-author">${r.author_name} <span class="stars">${'★'.repeat(r.rating)}</span></div>
+            <div class="review-text">${r.text || ''}</div>
+          </div>`).join('') +
+        '</div>';
+    }
+
+    content.innerHTML = `
+      <div class="detail-name">${det.name}</div>
+      <div class="detail-addr">${det.formatted_address || ''}</div>
+      <div class="detail-meta">
+        ${starsHtml(det.rating)}
+        ${det.user_ratings_total ? '<span>(' + det.user_ratings_total + ' reviews)</span>' : ''}
+        ${priceHtml(det.price_level)}
+        ${openBadge}
+        <span>${formatDistance(dist)}</span>
+      </div>
+      ${hoursHtml}
+      ${photosHtml}
+      ${actionsHtml}
+      ${reviewsHtml}
+    `;
+  });
+}
+
+// ---- Init map ----
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 37.5665, lng: 126.978 }, // Seoul default
+    zoom: 15,
+    disableDefaultUI: true,
+    zoomControl: true,
+    mapTypeControl: false,
+    styles: [
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', stylers: [{ visibility: 'simplified' }] },
+    ],
+  });
+
+  placesService = new google.maps.places.PlacesService(map);
+
+  // Get user location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+        const loc = new google.maps.LatLng(userLat, userLng);
+        map.setCenter(loc);
+
+        userMarker = new google.maps.Marker({
+          position: loc,
+          map: map,
+          title: 'You are here',
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: '#4285f4',
+            fillOpacity: 1,
+            strokeColor: '#fff',
+            strokeWeight: 3,
+          },
+        });
+
+        searchNearby();
+      },
+      (err) => {
+        setStatus('Location access denied. Showing Seoul center. Enable location for better results.', true);
+        userLat = 37.5665;
+        userLng = 126.978;
+        searchNearby();
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  } else {
+    setStatus('Geolocation not supported. Showing Seoul center.', true);
+    userLat = 37.5665;
+    userLng = 126.978;
+    searchNearby();
+  }
+}
+
+// ---- Gemini Chat ----
+const chatFab = document.getElementById('chatFab');
+const chatPanel = document.getElementById('chatPanel');
+const chatClose = document.getElementById('chatClose');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+const chatMessages = document.getElementById('chatMessages');
+
+let geminiHistory = [];
+
+chatFab.addEventListener('click', () => {
+  chatPanel.classList.add('open');
+  chatFab.style.display = 'none';
+  chatInput.focus();
+});
+
+chatClose.addEventListener('click', () => {
+  chatPanel.classList.remove('open');
+  chatFab.style.display = 'flex';
+});
+
+chatSend.addEventListener('click', sendGeminiChat);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendGeminiChat(); }
+});
+
+function appendChatMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  div.innerHTML = text.replace(/\n/g, '<br>');
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+async function sendGeminiChat() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+
+  chatInput.value = '';
+  chatSend.disabled = true;
+  appendChatMsg('user', text);
+
+  const typingEl = document.createElement('div');
+  typingEl.className = 'chat-typing';
+  typingEl.textContent = 'Thinking...';
+  chatMessages.appendChild(typingEl);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  // Build context
+  const group = CATEGORY_GROUPS[activeGroup];
+  const sub = group.subs[activeSub];
+  const nearbyNames = lastResults.slice(0, 10).map(p => {
+    const d = p._dist ? Math.round(p._dist) + 'm' : '';
+    return `${p.name} (${p.rating || '?'}★, ${d})`;
+  }).join(', ');
+
+  const systemText = `You are a helpful food, cafe, and bar recommendation assistant for someone currently in South Korea. You know Korean cuisine, cafes, and nightlife well. The user is using a place-finder app with Google Maps.
+
+Current context:
+- Category: ${group.label} > ${sub.label}
+- Search radius: ${searchRadius}m
+- Location: ${userLat ? userLat.toFixed(4) + ', ' + userLng.toFixed(4) : 'unknown'}
+- Nearby results: ${nearbyNames || 'none loaded yet'}
+
+Give concise, helpful recommendations. If the user asks for something specific, suggest what Korean search terms or categories they should try, or tell them to type it in the search bar. You can mention specific places from the nearby results if relevant. Keep responses short and mobile-friendly (2-4 paragraphs max). Use plain text, no markdown headers.`;
+
+  // Add user message to history
+  geminiHistory.push({ role: 'user', parts: [{ text: text }] });
+
+  // Build Gemini request contents (system instruction + history)
+  const contents = geminiHistory.map(m => ({ role: m.role, parts: m.parts }));
+
+  try {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemText }] },
+        contents: contents,
+      }),
+    });
+
+    typingEl.remove();
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      appendChatMsg('assistant', `Error: ${err.error?.message || resp.statusText}`);
+      geminiHistory.pop();
+    } else {
+      const data = await resp.json();
+      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+      appendChatMsg('assistant', reply);
+      geminiHistory.push({ role: 'model', parts: [{ text: reply }] });
+    }
+  } catch (e) {
+    typingEl.remove();
+    appendChatMsg('assistant', 'Network error. Check your connection and try again.');
+    geminiHistory.pop();
+  }
+
+  chatSend.disabled = false;
+  chatInput.focus();
+}
+
+// Load Google Maps script
+window.initMap = initMap;
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBTKSXtUuRGiTEaBPITI8CrO4JRlAcuz7Q&libraries=places&callback=initMap">
+</script>
+</body>
+</html>

@@ -178,9 +178,14 @@ body {
 }
 
 .card-distance {
+  display: inline-block;
   font-size: 12px;
-  color: #aaa;
-  margin-top: 4px;
+  font-weight: 700;
+  color: #4285f4;
+  margin-top: 5px;
+  background: #e8f0fe;
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
 .price {
@@ -403,6 +408,135 @@ body {
   line-height: 1.4;
 }
 
+/* Toggle filters */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.toggle-row::-webkit-scrollbar { display: none; }
+.toggle-row label {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.toggle-btn {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.toggle-btn.active {
+  background: #27ae60;
+  color: #fff;
+  border-color: #27ae60;
+}
+
+/* Price filter */
+.price-btn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 11px;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.price-btn.active {
+  background: #27ae60;
+  color: #fff;
+  border-color: #27ae60;
+}
+
+/* Surprise Me */
+.surprise-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 2px dashed #f5a623;
+  border-radius: 12px;
+  background: #fffbf0;
+  color: #b07d10;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.surprise-btn:active {
+  background: #f5a623;
+  color: #fff;
+}
+
+/* Cheat sheet */
+.cheatsheet-toggle {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: 1.5px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+  color: #555;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.cheatsheet-panel {
+  display: none;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  padding: 14px;
+  margin-top: 8px;
+}
+.cheatsheet-panel.open { display: block; }
+.cheatsheet-panel h4 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+}
+.cheatsheet-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.cheatsheet-panel td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.cheatsheet-panel td:first-child {
+  font-weight: 600;
+  color: #333;
+  width: 45%;
+}
+.cheatsheet-panel td:last-child {
+  color: #888;
+}
+.cheatsheet-section { margin-top: 12px; }
+.cheatsheet-section:first-child { margin-top: 0; }
+
+/* Naver directions button */
+.btn-naver {
+  background: #03c75a;
+  color: #fff;
+}
+
 /* Search bar */
 .search-row {
   display: flex;
@@ -458,6 +592,18 @@ body {
     <button class="style-btn" data-style="파인다이닝 고급 레스토랑">Fine Dining</button>
     <button class="style-btn" data-style="포장마차 노점 길거리음식">Street Food</button>
   </div>
+  <div class="toggle-row">
+    <label>Price:</label>
+    <button class="price-btn active" data-price="-1">Any</button>
+    <button class="price-btn" data-price="1">₩ &lt;10k</button>
+    <button class="price-btn" data-price="2">₩₩ 10-25k</button>
+    <button class="price-btn" data-price="3">₩₩₩ 25-50k</button>
+    <button class="price-btn" data-price="4">₩₩₩₩ 50k+</button>
+  </div>
+  <div class="toggle-row">
+    <button class="toggle-btn" id="openNowBtn">Open Now</button>
+    <button class="toggle-btn" id="englishBtn">English-Friendly</button>
+  </div>
   <div class="search-row">
     <input type="text" id="searchInput" placeholder="Search anything... e.g. &quot;rooftop bar&quot;">
     <button id="searchBtn">Search</button>
@@ -466,6 +612,70 @@ body {
 
 <div id="results">
   <div class="loading-msg" id="statusMsg">Detecting your location...</div>
+</div>
+
+<div style="padding: 0 12px 20px;">
+  <button class="surprise-btn" id="surpriseBtn">🎲 Surprise Me!</button>
+  <button class="cheatsheet-toggle" id="cheatsheetToggle">📖 Korean Menu Cheat Sheet</button>
+  <div class="cheatsheet-panel" id="cheatsheetPanel">
+    <div class="cheatsheet-section">
+      <h4>Meat & BBQ</h4>
+      <table>
+        <tr><td>삼겹살 (samgyeopsal)</td><td>Pork belly</td></tr>
+        <tr><td>갈비 (galbi)</td><td>Marinated short ribs</td></tr>
+        <tr><td>불고기 (bulgogi)</td><td>Marinated beef slices</td></tr>
+        <tr><td>목살 (moksal)</td><td>Pork neck</td></tr>
+        <tr><td>치킨 (chikin)</td><td>Fried chicken</td></tr>
+        <tr><td>양념치킨 (yangnyeom)</td><td>Sweet & spicy chicken</td></tr>
+      </table>
+    </div>
+    <div class="cheatsheet-section">
+      <h4>Rice & Noodles</h4>
+      <table>
+        <tr><td>비빔밥 (bibimbap)</td><td>Mixed rice bowl</td></tr>
+        <tr><td>김밥 (gimbap)</td><td>Seaweed rice roll</td></tr>
+        <tr><td>볶음밥 (bokkeumbap)</td><td>Fried rice</td></tr>
+        <tr><td>냉면 (naengmyeon)</td><td>Cold noodles</td></tr>
+        <tr><td>잔치국수 (janchi-guksu)</td><td>Banquet noodles</td></tr>
+        <tr><td>라면 (ramyeon)</td><td>Ramen / instant noodles</td></tr>
+      </table>
+    </div>
+    <div class="cheatsheet-section">
+      <h4>Soups & Stews</h4>
+      <table>
+        <tr><td>김치찌개 (kimchi-jjigae)</td><td>Kimchi stew</td></tr>
+        <tr><td>된장찌개 (doenjang-jjigae)</td><td>Soybean paste stew</td></tr>
+        <tr><td>순두부찌개 (sundubu)</td><td>Soft tofu stew</td></tr>
+        <tr><td>삼계탕 (samgyetang)</td><td>Ginseng chicken soup</td></tr>
+        <tr><td>국밥 (gukbap)</td><td>Rice soup</td></tr>
+        <tr><td>설렁탕 (seolleongtang)</td><td>Ox bone soup</td></tr>
+      </table>
+    </div>
+    <div class="cheatsheet-section">
+      <h4>Street Food & Snacks</h4>
+      <table>
+        <tr><td>떡볶이 (tteokbokki)</td><td>Spicy rice cakes</td></tr>
+        <tr><td>만두 (mandu)</td><td>Dumplings</td></tr>
+        <tr><td>호떡 (hotteok)</td><td>Sweet pancake</td></tr>
+        <tr><td>순대 (sundae)</td><td>Blood sausage</td></tr>
+        <tr><td>어묵 (eomuk)</td><td>Fish cake skewer</td></tr>
+        <tr><td>붕어빵 (bungeoppang)</td><td>Fish-shaped pastry</td></tr>
+      </table>
+    </div>
+    <div class="cheatsheet-section">
+      <h4>Useful Phrases</h4>
+      <table>
+        <tr><td>메뉴판 주세요</td><td>Menu please</td></tr>
+        <tr><td>영어 메뉴 있어요?</td><td>English menu?</td></tr>
+        <tr><td>이거 주세요</td><td>This one please</td></tr>
+        <tr><td>매운가요?</td><td>Is it spicy?</td></tr>
+        <tr><td>안 맵게 해주세요</td><td>Not spicy please</td></tr>
+        <tr><td>계산이요</td><td>Bill/check please</td></tr>
+        <tr><td>맛있어요!</td><td>It's delicious!</td></tr>
+        <tr><td>화장실 어디예요?</td><td>Where's the restroom?</td></tr>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- Detail overlay -->
@@ -533,6 +743,9 @@ let markers = [];
 let lastResults = [];
 let minRating = 0;
 let styleKeyword = '';
+let openNowOnly = false;
+let maxPrice = -1;
+let englishFriendly = false;
 
 // ---- Build group + subcategory buttons ----
 const groupFiltersEl = document.getElementById('groupFilters');
@@ -606,6 +819,44 @@ document.querySelectorAll('.style-btn').forEach(btn => {
   });
 });
 
+// ---- Price filter buttons ----
+document.querySelectorAll('.price-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    maxPrice = parseInt(btn.dataset.price);
+    searchNearby();
+  });
+});
+
+// ---- Open Now toggle ----
+const openNowBtn = document.getElementById('openNowBtn');
+openNowBtn.addEventListener('click', () => {
+  openNowOnly = !openNowOnly;
+  openNowBtn.classList.toggle('active', openNowOnly);
+  searchNearby();
+});
+
+// ---- English-friendly toggle ----
+const englishBtn = document.getElementById('englishBtn');
+englishBtn.addEventListener('click', () => {
+  englishFriendly = !englishFriendly;
+  englishBtn.classList.toggle('active', englishFriendly);
+  searchNearby();
+});
+
+// ---- Surprise Me ----
+document.getElementById('surpriseBtn').addEventListener('click', () => {
+  if (!lastResults.length) return;
+  const pick = lastResults[Math.floor(Math.random() * Math.min(lastResults.length, 10))];
+  showDetail(pick);
+});
+
+// ---- Cheat Sheet toggle ----
+document.getElementById('cheatsheetToggle').addEventListener('click', () => {
+  document.getElementById('cheatsheetPanel').classList.toggle('open');
+});
+
 // ---- Custom search bar ----
 const searchInput = document.getElementById('searchInput');
 const searchBtn = document.getElementById('searchBtn');
@@ -620,11 +871,14 @@ function doCustomSearch() {
   // Deactivate category buttons to show custom search is active
   subFiltersEl.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
 
-  placesService.nearbySearch({
+  const customReq = {
     location: new google.maps.LatLng(userLat, userLng),
     radius: searchRadius,
     keyword: query,
-  }, (results, status) => {
+  };
+  if (openNowOnly) customReq.openNow = true;
+
+  placesService.nearbySearch(customReq, (results, status) => {
     if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
       document.getElementById('results').innerHTML = '';
       setStatus('No results for "' + query + '". Try different words or a larger radius.', true);
@@ -634,9 +888,12 @@ function doCustomSearch() {
     if (minRating > 0) {
       results = results.filter(p => p.rating && p.rating >= minRating);
     }
+    if (maxPrice > 0) {
+      results = results.filter(p => p.price_level != null && p.price_level <= maxPrice);
+    }
     if (!results.length) {
       document.getElementById('results').innerHTML = '';
-      setStatus('No places match the current rating filter.', true);
+      setStatus('No places match the current filters.', true);
       return;
     }
 
@@ -771,9 +1028,14 @@ function searchNearby() {
     radius: searchRadius,
     type: group.type,
   };
-  const keywords = [sub.keyword, styleKeyword].filter(Boolean).join(' ');
+  const keywordParts = [sub.keyword, styleKeyword];
+  if (englishFriendly) keywordParts.push('영어 메뉴 English menu');
+  const keywords = keywordParts.filter(Boolean).join(' ');
   if (keywords) {
     request.keyword = keywords;
+  }
+  if (openNowOnly) {
+    request.openNow = true;
   }
 
   placesService.nearbySearch(request, (results, status) => {
@@ -788,9 +1050,14 @@ function searchNearby() {
       results = results.filter(p => p.rating && p.rating >= minRating);
     }
 
+    // Apply price level filter
+    if (maxPrice > 0) {
+      results = results.filter(p => p.price_level != null && p.price_level <= maxPrice);
+    }
+
     if (!results.length) {
       document.getElementById('results').innerHTML = '';
-      setStatus('No places match the current rating filter. Try lowering the minimum rating.', true);
+      setStatus('No places match the current filters. Try adjusting your criteria.', true);
       return;
     }
 
@@ -912,12 +1179,16 @@ function showDetail(place) {
         '</div>';
     }
 
-    // Directions link
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${det.geometry.location.lat()},${det.geometry.location.lng()}&destination_place_id=${place.place_id}`;
+    // Naver Maps directions (tries app first, falls back to web)
+    const destLat = det.geometry.location.lat();
+    const destLng = det.geometry.location.lng();
+    const destName = encodeURIComponent(det.name);
+    const naverAppUrl = `nmap://route/public?dlat=${destLat}&dlng=${destLng}&dname=${destName}&appname=korea-food-finder`;
+    const naverWebUrl = `https://map.naver.com/p/directions/-/${destLng},${destLat},${destName}/-/transit`;
 
     // Actions
     let actionsHtml = `<div class="detail-actions">
-      <a class="btn-directions" href="${mapsUrl}" target="_blank">Directions</a>`;
+      <a class="btn-naver" href="${naverWebUrl}" target="_blank" onclick="window.location='${naverAppUrl}';return false;">Naver Maps</a>`;
     if (det.formatted_phone_number) {
       actionsHtml += `<a class="btn-call" href="tel:${det.formatted_phone_number}">Call</a>`;
     }
